@@ -122,17 +122,17 @@ CO2::Reading CO2::read() {
   }
 
   // Calibration values (MH-Z19b, Temtop):
-  constexpr LinearFunction correction = LinearRegression::Line{{
+  constexpr LinearRegression::LinearFunction correction{{
       {455, 491},
       {553, 663},
       {673, 945},
       {728, 1043},
       {855, 1320},
   }};
+  static_assert(correction.ok(), "Could not compute linear function: singular matrix");
 
   if (debug) {
-    print(Serial, F("CO2: applying linear correction mx+b: m="), correction.m,
-          F(", b="), correction.b, F(", r="), correction.r);
+    print(Serial, F("CO2: applying linear correction mx+b: m="), correction);
   }
   int const ppm_raw = 256 * (int)response[2] + response[3];
   int const ppm_corrected = correction(ppm_raw);
