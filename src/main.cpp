@@ -1,25 +1,33 @@
 #include <Arduino.h>
 
 #include "../include/CO2.h"
+#include "../include/blink.h"
 #include "../include/print.h"
 
-static const bool PRODUCTION = false;
+/**
+ * In production mode, disable USB debugging and enable any power saving we can
+ * do. In non-production mode, more debug information is available.
+ */
+constexpr bool PRODUCTION = false;
+/**
+ * Number of seconds to wait between logging sensor measurements. This is
+ * currently 5, because the MH-Z19B doesn't do more than one measurement per 5
+ * seconds.
+ */
+constexpr int secsPerLog = 1;
 
-static const int ledPin = PIN_C4;
-static const int buttonPin = PIN_C7;
+constexpr int ledPin = PIN_C4;
+constexpr int buttonPin = PIN_C7;
 
 static struct State {
-  // the loop routine runs over and over again forever:
-  uint8_t x = 255;
-  uint8_t increment = 1;
+  CO2 co2{Serial1};
+  Blink blink{ledPin};
   int prev_state = HIGH;
   bool switched = true;
 
   unsigned long lastTime = millis();
   unsigned long iterations = 0;
 } state;
-
-static CO2 co2(Serial1);
 
 void handleButton() {
   // read the state of the pushbutton value:
@@ -29,25 +37,6 @@ void handleButton() {
     state.switched = !state.switched;
   }
   state.prev_state = button_state;
-}
-
-void handleLed() {
-  // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
-  if (state.switched) {
-    // turn LED on:
-    analogWrite(ledPin, state.x);
-  } else {
-    // turn LED off:
-    digitalWrite(ledPin, LOW);
-  }
-
-  state.x += state.increment;
-  if (state.x == 255) {
-    state.increment = -1;
-  }
-  if (state.x == 0) {
-    state.increment = 1;
-  }
 }
 
 void handleUsb() {
@@ -70,16 +59,17 @@ void handleUsb() {
 void handleLoopTimer() {
   unsigned long const currTime = millis();
 
-  if (currTime - state.lastTime >= 1000) {
+  if (currTime - state.lastTime >= secsPerLog * 1000) {
     printTime(Serial, currTime);
-    print(Serial, state.iterations, F(" iterations per second ("),
-          1 / double(state.iterations) * 1e6, 0, F("μs per iteration)"));
+    print(Serial, state.iterations / secsPerLog, F(" iterations per second ("),
+          secsPerLog / double(state.iterations) * 1e6, 0,
+          F("μs per iteration)"));
     state.lastTime = currTime / 1000 * 1000;
     state.iterations = 0;
 
     // int photo_value = analogRead(PIN_F7);
     // float celsius = readTemperature();
-    CO2::Reading co2Reading = co2.read();
+    CO2::Reading co2Reading = state.co2.read();
 
     print(Serial,
           // F("Photoresistor: "), photo_value,
@@ -111,9 +101,9 @@ void setup() {
   }
 
   // print(Serial, F("Sending calibration command to CO2 sensor"));
-  // co2.calibrateZeroPoint();
-  // co2.setABC(false);
-  // co2.calibrateSpanPoint(1000);
+  // state.co2.calibrateZeroPoint();
+  // state.co2.setABC(false);
+  // state.co2.calibrateSpanPoint(1000);
 
   // Running the CPU at 1MHz should now consume around 6mA.
 
@@ -136,11 +126,11 @@ void setup() {
 
 void loop() {
   // handleButton();
-  handleLed();
+  state.blink.loop();
   handleUsb();
   handleLoopTimer();
 }
 
 #endif  // UNIT_TEST
 
-ISR(INT0_vect) { Serial.println(__func__); }
+//ISR(INT0_vect) { Serial.println(__func__); }

@@ -3,10 +3,6 @@
 #include "../include/linreg.h"
 #include "../include/print.h"
 
-constexpr int STATUS_NO_RESPONSE = -2;
-constexpr int STATUS_CHECKSUM_MISMATCH = -3;
-constexpr int STATUS_INCOMPLETE = -4;
-constexpr int STATUS_NOT_READY = -5;
 constexpr bool debug = true;
 
 CO2::CO2(HardwareSerial &io) : input_(io) { io.begin(9600); }
@@ -129,10 +125,11 @@ CO2::Reading CO2::read() {
       {728, 1043},
       {855, 1320},
   }};
-  static_assert(correction.ok(), "Could not compute linear function: singular matrix");
+  static_assert(correction.ok(),
+                "Could not compute linear function: singular matrix");
 
   if (debug) {
-    print(Serial, F("CO2: applying linear correction mx+b: m="), correction);
+    print(Serial, F("CO2: applying linear correction: "), correction);
   }
   int const ppm_raw = 256 * (int)response[2] + response[3];
   int const ppm_corrected = correction(ppm_raw);
