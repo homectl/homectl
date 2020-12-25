@@ -21,8 +21,8 @@ double readTemperature() {
 
     Test:
      R = 6.01kΩ
-     T = 1 / (−0.008338999116 + 0.001879352335 * ln(6010) + −0.000007261618354 * ln(6010)^3) - 273.15
-     T = 36.4
+     T = 1 / (−0.008338999116 + 0.001879352335 * ln(6010) + −0.000007261618354 *
+    ln(6010)^3) - 273.15 T = 36.4
 
     Measurements (fridge:
      Temp. | Resistance
@@ -41,8 +41,8 @@ double readTemperature() {
 
     Test:
      R = 6.01kΩ
-     T = 1 / (0.005 609 420 938 + −0.000 459 334 028 9 * ln(6010) + 0.000 002 540 864 791 * ln(6010)^3) - 273.15
-     T = 36.4
+     T = 1 / (0.005 609 420 938 + −0.000 459 334 028 9 * ln(6010) +
+    0.000 002 540 864 791 * ln(6010)^3) - 273.15 T = 36.4
   */
   int const rawADC = analogRead(PIN_F6);
   constexpr long pad = 9960;
@@ -50,7 +50,9 @@ double readTemperature() {
   print(Serial, F("ADC: "), rawADC, F(", resistance: "), resistance);
 
   double const lnrt = log(resistance);
-  double const kelvin = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * lnrt * lnrt)) * lnrt);
+  double const kelvin =
+      1 /
+      (0.001129148 + (0.000234125 + (0.0000000876741 * lnrt * lnrt)) * lnrt);
   double const celsius = kelvin - 273.15;  // Convert Kelvin to Celsius
 
   return celsius;
