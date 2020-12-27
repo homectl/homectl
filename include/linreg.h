@@ -7,7 +7,11 @@ struct Stream;
 namespace LinearRegression {
 
 struct Point {
+  // Temperature from our sensor.
+  double t;
+  // CO2 reading from our sensor.
   double x;
+  // CO2 reading from the reference sensor.
   double y;
 };
 

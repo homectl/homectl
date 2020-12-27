@@ -1,13 +1,14 @@
 #include "../include/CO2.h"
 
 #include "../include/linreg.h"
+#include "../include/matrix.h"
 #include "../include/print.h"
 
 constexpr bool debug = true;
 
 CO2::CO2(HardwareSerial &io) : input_(io) { io.begin(9600); }
 
-static byte getCheckSum(byte *packet) {
+static constexpr byte getCheckSum(byte const (&packet)[9]) {
   byte checksum = 0;
   for (byte i = 1; i < 8; i++) {
     checksum += packet[i];
@@ -16,6 +17,9 @@ static byte getCheckSum(byte *packet) {
   checksum += 1;
   return checksum;
 }
+
+static_assert(getCheckSum({0, 1, 2, 3, 4, 5, 6, 7, 8}) == 0xE4,
+              "getCheckSum is implemented wrong");
 
 static int readResponse(Stream &io, byte (&response)[9]) {
   int waited = 0;
@@ -117,23 +121,46 @@ CO2::Reading CO2::read() {
     return {STATUS_CHECKSUM_MISMATCH};
   }
 
-  // Calibration values (MH-Z19b, Temtop):
-  constexpr LinearRegression::LinearFunction correction{{
-      {455, 491},
-      {553, 663},
-      {673, 945},
-      {728, 1043},
-      {855, 1320},
+  /*
+    constexpr LinearRegression::LinearFunction tempCorrection{{
+        {13, 15},
+        {14, 15},
+        {15, 16},
+        {16, 17},
+        {17, 18},
+        {20, 20},
+        {21, 21},
+    }};
+    */
+
+  // Calibration values {Temp (Sensor), CO2 (Sensor), CO2 (Temtop)}:
+  constexpr LinearFunction<2> correction{{
+      {13, 540, 571},  {13, 563, 631},
+
+      {14, 580, 676},
+
+      {15, 482, 413},  {15, 571, 561}, {15, 582, 663}, {15, 621, 726},
+      {15, 631, 704},  {15, 686, 859}, {15, 704, 891},
+
+      {16, 621, 752},  {16, 600, 670}, {16, 631, 696}, {16, 644, 751},
+      {16, 723, 933},
+
+      {17, 609, 755},  {17, 618, 767}, {17, 637, 834}, {17, 642, 838},
+      {17, 734, 1009},
+
+      {18, 565, 681},
+
+      {20, 530, 630},
+
+      {21, 527, 700},  {21, 529, 703}, {21, 553, 723},
   }};
-  static_assert(correction.ok(),
-                "Could not compute linear function: singular matrix");
 
   if (debug) {
     print(Serial, F("CO2: applying linear correction: "), correction);
   }
   int const ppm_raw = 256 * (int)response[2] + response[3];
-  int const ppm_corrected = correction(ppm_raw);
   int const temperature = response[4] - 34;
+  int const ppm_corrected = correction(temperature, ppm_raw);
   int const unknown = 256 * (int)response[6] + response[7];
 
   byte const status = response[5];

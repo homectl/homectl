@@ -11,9 +11,9 @@ Stream &operator<<(Stream &out, LinearFunction const &f) {
 void testLinearFunction() {
   // y = 1.25x - 0.5
   constexpr LinearFunction f{{
-      {1, 1},
-      {2, 1.5},
-      {3, 3.5},
+      {0, 1, 1},
+      {0, 2, 1.5},
+      {0, 3, 3.5},
   }};
   static_assert(f.ok(), "Singular matrix error");
   static_assert(f(0) == -0.5, "Unexpected zero-point");
@@ -23,8 +23,8 @@ void testLinearFunction() {
 void testCatchZeroDenom() {
   // We can't draw a line because the points have no distance.
   constexpr LinearFunction f{{
-      {1, 1},
-      {1, 1},
+      {0, 1, 1},
+      {0, 1, 1},
   }};
   static_assert(!f.ok(), "Didn't catch zero division");
 }
