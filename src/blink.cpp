@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-Blink::Blink(int pin) : pin_(pin) {
+Blink::Blink(uint8_t pin) : pin_(pin) {
   // initialize the digital pin as an output.
   pinMode(pin_, OUTPUT);
 }

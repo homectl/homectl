@@ -10,9 +10,9 @@ PushButton::PushButton(uint8_t pin)
 
 void PushButton::loop() {
   // read the state of the pushbutton value:
-  int const buttonState = digitalRead(pin_);
+  uint8_t const buttonState = digitalRead(pin_);
   if (prevState_ != buttonState && buttonState == HIGH) {
-    print(Serial, F("[button]: Button switched"));
+    LOG(F("button switched"));
     switched_ = !switched_;
   }
   prevState_ = buttonState;

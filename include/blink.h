@@ -19,7 +19,7 @@ class Blink {
   /**
    * Initialise a blinker on a given PWM pin.
    */
-  explicit Blink(int pin);
+  explicit Blink(uint8_t pin);
 
   /**
    * Turn the blinker on (true) or off (false).

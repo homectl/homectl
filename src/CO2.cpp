@@ -7,6 +7,18 @@
 constexpr LinearFunction<2> correction{{
     // Probably stable (measured after leaving the room with a closed
     // door and windows).
+    {16, 441, 464},
+    {16, 491, 568},
+
+    {17, 468, 533},
+    {17, 535, 635},
+    {17, 544, 698},
+
+    {18, 416, 399},
+    {18, 749, 1099},
+    {18, 773, 1133},
+    {18, 814, 1200},
+
     {20, 539, 699},
     {20, 577, 776},
 
@@ -37,6 +49,8 @@ constexpr LinearFunction<2> correction{{
 
     {18, 565, 681},
 
+    {19, 554, 736},
+
     {20, 552, 725},
 }};
 
@@ -55,27 +69,29 @@ static constexpr byte getCheckSum(byte const (&packet)[9]) {
 static_assert(getCheckSum({0, 1, 2, 3, 4, 5, 6, 7, 8}) == 0xE4,
               "getCheckSum is implemented wrong");
 
+static bool hasGarbage(Stream &io) {
+  return io.available() > 0 && (byte)io.peek() != 0xFF;
+}
+
 static int readResponse(Stream &io, byte (&response)[9]) {
   int waited = 0;
   while (io.available() == 0) {
     delay(100);  // wait a short moment to avoid false reading
     if (waited++ > 10) {
-      print(Serial, F("[CO2]: no response after 1 second"));
+      LOG(F("no response after 1 second"));
       io.flush();
       return STATUS_NO_RESPONSE;
     }
   }
 
   // The response starts with 0xff. If we get anything else, it's garbage.
-  boolean skip = false;
-  while (io.available() > 0 && (byte)io.peek() != 0xFF) {
-    if (!skip) {
-      print(Serial, F("[CO2]: skipping unexpected readings:"));
-      skip = true;
+  if (hasGarbage(io)) {
+    LOGGER(logger);
+    logger << F("skipping unexpected readings:");
+    while (hasGarbage(io)) {
+      logger.printf(F(" %02X"), io.read());
     }
-    printf(Serial, F(" %02X"), io.read());
   }
-  if (skip) print(Serial);
 
   if (io.available() > 0) {
     int const count = io.readBytes(response, 9);
@@ -88,13 +104,13 @@ static int readResponse(Stream &io, byte (&response)[9]) {
     return STATUS_INCOMPLETE;
   }
 
-  print(Serial, F("  <<"), Bytes(response));
+  LOG(F("  <<"), Bytes(response));
 
   return 0;
 }
 
 static int sendCommand(Stream &io, byte (&cmd)[9], byte (*response)[9]) {
-  print(Serial, F("  >>"), Bytes(cmd));
+  LOG(F("  >>"), Bytes(cmd));
   cmd[8] = getCheckSum(cmd);
   io.write(cmd, 9);
 
@@ -105,7 +121,7 @@ static int sendCommand(Stream &io, byte (&cmd)[9], byte (*response)[9]) {
 
   int ret = readResponse(io, *response);
   if (ret != 0) {
-    print(Serial, F("[CO2]: error in "), __func__, F(": "), ret);
+    LOG(F("error reading response: "), ret);
   }
 
   return ret;
@@ -140,14 +156,14 @@ CO2::Reading CO2::read() {
 
   byte const check = getCheckSum(response);
   if (response[8] != check) {
-    print(Serial, F("[CO2]: checksum failed"));
-    printf(Serial, F("[CO2]: received: %02X"), response[8]);
-    printf(Serial, F("[CO2]: should be: %02X"), check);
+    LOG(F("checksum failed"));
+    LOGF(F("received: %02X"), response[8]);
+    LOGF(F("should be: %02X"), check);
     input_.flush();
     return {STATUS_CHECKSUM_MISMATCH};
   }
 
-  print(Serial, F("[CO2]: applying linear correction: "), correction);
+  LOG(F("applying linear correction: "), correction);
   int const ppm_raw = 256 * (int)response[2] + response[3];
   int const temperature = response[4] - 34;
   int const ppm_corrected = correction(temperature, ppm_raw);
@@ -157,7 +173,7 @@ CO2::Reading CO2::read() {
 
   // Is always 0 for version 19b.
   if (status != 0) {
-    printf(Serial, F("[CO2]: status not OK: %02X"), status);
+    LOGF(F("status not OK: %02X"), status);
   }
 
   input_.flush();
@@ -166,7 +182,7 @@ CO2::Reading CO2::read() {
 }
 
 Print &operator<<(Print &out, CO2::Reading const &reading) {
-  out << F("[CO2]: Temp: x1=") << reading.temperature << F(", CO2: x2=")
+  out << F("Temp: x1=") << reading.temperature << F(", CO2: x2=")
       << reading.ppm_raw << F(", Corrected: ") << reading.ppm_corrected
       << F(", Unknown: ") << reading.unknown;
   return out;

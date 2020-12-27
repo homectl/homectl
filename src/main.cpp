@@ -32,7 +32,7 @@ void handleUsb() {
 
   if (recv[0] != '\0') {
     // say what you got:
-    print(Serial, F("I received: "), recv);
+    LOG(F("I received: "), recv);
   }
 }
 
@@ -40,15 +40,13 @@ void handleLoopTimer() {
   unsigned long const currTime = millis();
 
   if (currTime - state.lastTime >= secsPerLog * 1000) {
-    print(Serial, Time(currTime), state.iterations / secsPerLog,
-          F(" iterations per second ("),
-          secsPerLog / double(state.iterations) * 1e6, 0,
-          F("μs per iteration)"));
+    LOG(state.iterations / secsPerLog, F(" iterations per second ("),
+        secsPerLog / double(state.iterations) * 1e6, 0, F("μs per iteration)"));
     state.lastTime = currTime / 1000 * 1000;
     state.iterations = 0;
 
     CO2::Reading co2Reading = state.co2.read();
-    print(Serial, co2Reading);
+    LOG(co2Reading);
   }
 
   ++state.iterations;
@@ -74,29 +72,24 @@ void setup() {
   if (DEBUG) {
     Serial.begin(9600);
   }
-  print(Serial, F("Setup starting"));
+  LOG(F("setup starting"));
   // Disable USB, reduces power consumption by around 11mA.
   if (PRODUCTION) {
     Serial.end();
   }
 
-  // print(Serial, F("Sending calibration command to CO2 sensor"));
+  // LOG(F("Sending calibration command to CO2 sensor"));
   // state.co2.calibrateZeroPoint();
   // state.co2.setABC(false);
   // state.co2.calibrateSpanPoint(1000);
-
-  // Running the CPU at 1MHz should now consume around 6mA.
 
   EICRA |= (1 << ISC01);  // Trigger on falling edge
   EIMSK |= (1 << INT0);   // Enable external interrupt INT0
   sei();                  // Enable global interrupts
 
-  print(Serial, Time(millis()), ": Setup complete");
+  LOG("setup complete");
 }
 
 #endif  // UNIT_TEST
 
-ISR(INT0_vect) {
-  print(Serial, __func__, " D0=", analogRead(PIN_D0),
-        " D1=", analogRead(PIN_D1));
-}
+ISR(INT0_vect) { LOG(" D0=", analogRead(PIN_D0), " D1=", analogRead(PIN_D1)); }
