@@ -24,7 +24,7 @@ class Blink {
   /**
    * Turn the blinker on (true) or off (false).
    */
-  void enable(bool enabled);
+  void setEnabled(bool enabled);
 
   /**
    * Run one iteration of the blink loop, incrementing or decrementing the PWM

@@ -1,7 +1,7 @@
 #include "../include/CO2.h"
 
-#include "../include/matrix.h"
-#include "../include/print.h"
+#include "../include/Matrix.h"
+#include "../include/Print.h"
 
 // Calibration values {Temp (Sensor), CO2 (Sensor), CO2 (Temtop)}:
 constexpr LinearFunction<2> correction{{
@@ -53,6 +53,11 @@ constexpr LinearFunction<2> correction{{
 
     {20, 552, 725},
 }};
+
+// Check that we didn't accidentally put more data in here than strictly
+// necessary for runtime computation.
+static_assert(sizeof correction == sizeof(double) * 3,
+              "extra data unaccounted for in LinearFunction");
 
 CO2::CO2(HardwareSerial &io) : input_(io) { io.begin(9600); }
 

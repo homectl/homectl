@@ -1,40 +1,27 @@
 #include <Arduino.h>
 
+#include "../include/Blink.h"
+#include "../include/Button.h"
 #include "../include/CO2.h"
-#include "../include/blink.h"
-#include "../include/print.h"
+#include "../include/Print.h"
+#include "../include/UsbEcho.h"
 
 /**
  * Number of seconds to wait between logging sensor measurements. This is
- * currently 6, because the MH-Z19B doesn't do more than one measurement per 6
- * seconds.
+ * currently 6, because the MH-Z19B doesn't do more than one measurement per
+ * 6 seconds.
  */
 constexpr int secsPerLog = 6;
 
 static struct State {
   CO2 co2{Serial1};
   Blink blink{PIN_C4};
+  PushButton button{PIN_C0};
+  UsbEcho usbEcho;
 
   unsigned long lastTime = millis();
   unsigned long iterations = 0;
 } state;
-
-void handleUsb() {
-  char recv[100];
-  char *it = recv;
-  char *et = recv + sizeof recv;
-  while (Serial.available() > 0 && it + 1 != et) {
-    // read the incoming byte:
-    *it = Serial.read();
-    ++it;
-  }
-  *it = '\0';
-
-  if (recv[0] != '\0') {
-    // say what you got:
-    LOG(F("I received: "), recv);
-  }
-}
 
 void handleLoopTimer() {
   unsigned long const currTime = millis();
@@ -56,7 +43,9 @@ void handleLoopTimer() {
 
 void loop() {
   state.blink.loop();
-  handleUsb();
+  state.button.loop();
+  state.usbEcho.loop();
+
   handleLoopTimer();
 }
 
@@ -86,6 +75,8 @@ void setup() {
   EICRA |= (1 << ISC01);  // Trigger on falling edge
   EIMSK |= (1 << INT0);   // Enable external interrupt INT0
   sei();                  // Enable global interrupts
+
+  connect(state.button.pushed, Blink, setEnabled, state.blink);
 
   LOG("setup complete");
 }

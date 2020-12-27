@@ -1,4 +1,4 @@
-#include "../include/power.h"
+#include "../include/Power.h"
 
 #include <Arduino.h>
 

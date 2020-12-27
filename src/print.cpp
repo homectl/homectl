@@ -1,4 +1,4 @@
-#include "../include/print.h"
+#include "../include/Print.h"
 
 size_t Time::printTo(Print &out) const {
   unsigned long const curr_min = currTime / 1000 / 60;
@@ -21,7 +21,7 @@ Logger<true>::Logger(Print &log, __FlashStringHelper const *file, int line,
   sz += log_->print(func);
   sz += log_->print(')');
   static size_t maxLogPadding = 40;
-  if (sz > maxLogPadding) {
+  if (sz >= maxLogPadding) {
     maxLogPadding = sz + 1;
   }
   while (sz < maxLogPadding) {

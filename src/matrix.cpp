@@ -1,8 +1,8 @@
-#include "../include/matrix.h"
+#include "../include/Matrix.h"
 
 #include <Arduino.h>
 
-#include "../include/print.h"
+#include "../include/Print.h"
 
 void printMatrix(Print &out, int rows, int cols, double const *data) {
   out << "Matrix<" << rows << ", " << cols << ">{{\n";

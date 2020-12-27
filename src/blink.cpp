@@ -1,4 +1,4 @@
-#include "../include/blink.h"
+#include "../include/Blink.h"
 
 #include <Arduino.h>
 
@@ -7,7 +7,7 @@ Blink::Blink(uint8_t pin) : pin_(pin) {
   pinMode(pin_, OUTPUT);
 }
 
-void Blink::enable(bool enabled) { enabled_ = enabled; }
+void Blink::setEnabled(bool enabled) { enabled_ = enabled; }
 
 void Blink::loop() {
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
