@@ -11,7 +11,7 @@
  */
 class Blink {
   bool enabled_ = true;
-  uint8_t ledPin_;
+  uint8_t const pin_;
   uint8_t increment_ = 1;
   uint8_t value_ = 255;
 
@@ -19,7 +19,7 @@ class Blink {
   /**
    * Initialise a blinker on a given PWM pin.
    */
-  Blink(int ledPin);
+  explicit Blink(int pin);
 
   /**
    * Turn the blinker on (true) or off (false).

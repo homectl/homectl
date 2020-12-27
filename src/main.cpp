@@ -11,28 +11,13 @@
  */
 constexpr int secsPerLog = 6;
 
-constexpr int ledPin = PIN_C4;
-constexpr int buttonPin = PIN_C7;
-
 static struct State {
   CO2 co2{Serial1};
-  Blink blink{ledPin};
-  int prev_state = HIGH;
-  bool switched = true;
+  Blink blink{PIN_C4};
 
   unsigned long lastTime = millis();
   unsigned long iterations = 0;
 } state;
-
-void handleButton() {
-  // read the state of the pushbutton value:
-  int const button_state = digitalRead(buttonPin);
-  if (state.prev_state != button_state && button_state == HIGH) {
-    print(Serial, F("Button switched"));
-    state.switched = !state.switched;
-  }
-  state.prev_state = button_state;
-}
 
 void handleUsb() {
   char recv[100];
@@ -72,7 +57,6 @@ void handleLoopTimer() {
 #ifndef UNIT_TEST
 
 void loop() {
-  // handleButton();
   state.blink.loop();
   handleUsb();
   handleLoopTimer();
@@ -80,12 +64,12 @@ void loop() {
 
 // the setup routine runs once when you press reset:
 void setup() {
-#if 0
-  // Disable input on all pins, reduces power consumption by around 3mA.
-  for (int i = 0; i < 46; ++i) {
-    pinMode(i, OUTPUT);
+  if (PRODUCTION) {
+    // Disable input on all pins, reduces power consumption by around 3mA.
+    for (int i = 0; i < 46; ++i) {
+      pinMode(i, OUTPUT);
+    }
   }
-#endif
 
   if (DEBUG) {
     Serial.begin(9600);
@@ -103,22 +87,16 @@ void setup() {
 
   // Running the CPU at 1MHz should now consume around 6mA.
 
-  // initialize the digital pin as an output.
-  pinMode(ledPin, OUTPUT);
-
-  // initialize the pushbutton pin as an input:
-  pinMode(buttonPin, INPUT);
-  pinMode(PIN_F7, INPUT);
-  pinMode(PIN_F6, INPUT);
-
   EICRA |= (1 << ISC01);  // Trigger on falling edge
   EIMSK |= (1 << INT0);   // Enable external interrupt INT0
   sei();                  // Enable global interrupts
-  pinMode(PIN_C0, INPUT);
 
   print(Serial, Time(millis()), ": Setup complete");
 }
 
 #endif  // UNIT_TEST
 
-// ISR(INT0_vect) { Serial.println(__func__); }
+ISR(INT0_vect) {
+  print(Serial, __func__, " D0=", analogRead(PIN_D0),
+        " D1=", analogRead(PIN_D1));
+}

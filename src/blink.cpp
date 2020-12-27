@@ -2,7 +2,10 @@
 
 #include <Arduino.h>
 
-Blink::Blink(int ledPin) : ledPin_(ledPin) {}
+Blink::Blink(int pin) : pin_(pin) {
+  // initialize the digital pin as an output.
+  pinMode(pin_, OUTPUT);
+}
 
 void Blink::enable(bool enabled) { enabled_ = enabled; }
 
@@ -10,10 +13,10 @@ void Blink::loop() {
   // check if the pushbutton is pressed. If it is, the buttonState is HIGH:
   if (enabled_) {
     // turn LED on:
-    analogWrite(ledPin_, value_);
+    analogWrite(pin_, value_);
   } else {
     // turn LED off:
-    digitalWrite(ledPin_, LOW);
+    digitalWrite(pin_, LOW);
   }
 
   value_ += increment_;
