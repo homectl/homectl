@@ -109,3 +109,5 @@ class CO2 {
    */
   Reading read();
 };
+
+Print &operator<<(Print &out, CO2::Reading const &reading);

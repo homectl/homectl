@@ -5,16 +5,11 @@
 #include "../include/print.h"
 
 /**
- * In production mode, disable USB debugging and enable any power saving we can
- * do. In non-production mode, more debug information is available.
- */
-constexpr bool PRODUCTION = false;
-/**
  * Number of seconds to wait between logging sensor measurements. This is
- * currently 5, because the MH-Z19B doesn't do more than one measurement per 5
+ * currently 6, because the MH-Z19B doesn't do more than one measurement per 6
  * seconds.
  */
-constexpr int secsPerLog = 1;
+constexpr int secsPerLog = 6;
 
 constexpr int ledPin = PIN_C4;
 constexpr int buttonPin = PIN_C7;
@@ -33,7 +28,7 @@ void handleButton() {
   // read the state of the pushbutton value:
   int const button_state = digitalRead(buttonPin);
   if (state.prev_state != button_state && button_state == HIGH) {
-    Serial.println(F("Button switched"));
+    print(Serial, F("Button switched"));
     state.switched = !state.switched;
   }
   state.prev_state = button_state;
@@ -60,29 +55,28 @@ void handleLoopTimer() {
   unsigned long const currTime = millis();
 
   if (currTime - state.lastTime >= secsPerLog * 1000) {
-    printTime(Serial, currTime);
-    print(Serial, state.iterations / secsPerLog, F(" iterations per second ("),
+    print(Serial, Time(currTime), state.iterations / secsPerLog,
+          F(" iterations per second ("),
           secsPerLog / double(state.iterations) * 1e6, 0,
           F("μs per iteration)"));
     state.lastTime = currTime / 1000 * 1000;
     state.iterations = 0;
 
-    // int photo_value = analogRead(PIN_F7);
-    // float celsius = readTemperature();
     CO2::Reading co2Reading = state.co2.read();
-
-    print(Serial,
-          // F("Photoresistor: "), photo_value,
-          // F(", Thermistor: "), celsius,
-          F("CO2: "), co2Reading.ppm_raw, F(", Corrected: "),
-          co2Reading.ppm_corrected, F(", Temp (CO2): "), co2Reading.temperature,
-          F(", Unknown: "), co2Reading.unknown);
+    print(Serial, co2Reading);
   }
 
   ++state.iterations;
 }
 
 #ifndef UNIT_TEST
+
+void loop() {
+  // handleButton();
+  state.blink.loop();
+  handleUsb();
+  handleLoopTimer();
+}
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -93,8 +87,10 @@ void setup() {
   }
 #endif
 
-  Serial.begin(9600);
-  Serial.println(F("Setup starting"));
+  if (DEBUG) {
+    Serial.begin(9600);
+  }
+  print(Serial, F("Setup starting"));
   // Disable USB, reduces power consumption by around 11mA.
   if (PRODUCTION) {
     Serial.end();
@@ -120,15 +116,7 @@ void setup() {
   sei();                  // Enable global interrupts
   pinMode(PIN_C0, INPUT);
 
-  printTime(Serial, millis());
-  Serial.println(F("Setup complete"));
-}
-
-void loop() {
-  // handleButton();
-  state.blink.loop();
-  handleUsb();
-  handleLoopTimer();
+  print(Serial, Time(millis()), ": Setup complete");
 }
 
 #endif  // UNIT_TEST

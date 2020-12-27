@@ -4,7 +4,7 @@
 
 #include "../include/print.h"
 
-void printMatrix(Stream &out, int rows, int cols, double const *data) {
+void printMatrix(Print &out, int rows, int cols, double const *data) {
   out << "Matrix<" << rows << ", " << cols << ">{{\n";
   for (int i = 0; i < rows; ++i) {
     out << "  {";
@@ -19,7 +19,7 @@ void printMatrix(Stream &out, int rows, int cols, double const *data) {
   out << "}}";
 }
 
-void printLinearFunction(Stream &out, int vars, double const *data) {
+void printLinearFunction(Print &out, int vars, double const *data) {
   out << data[0];
   for (int i = 0; i < vars; ++i) {
     out << " + " << data[i + 1] << "x" << (i + 1);
@@ -113,25 +113,6 @@ void testMatrixSlice() {
                 "slice() failed");
 }
 
-void testOLS2Vars() {
-  constexpr Matrix<5, 2> X{{
-      {1, 455},
-      {1, 553},
-      {1, 673},
-      {1, 728},
-      {1, 855},
-  }};
-  constexpr Matrix<5, 1> y{{
-      {491},
-      {663},
-      {945},
-      {1043},
-      {1320},
-  }};
-  constexpr Matrix<2, 1> beta = ordinaryLeastSquares<2, 5>(X, y);
-  static_assert(roundBy(beta, 100) == Matrix<2, 1>{{{-474.88}, {2.09}}});
-}
-
 void testSimpleLinearFunction() {
   // y = 1.25x - 0.5
   constexpr LinearFunction<1> f{{
@@ -154,13 +135,13 @@ void testSimple2VarLinearFunction() {
 }
 
 void testLinearFunction() {
-  constexpr LinearFunction<1> f({{
+  constexpr LinearFunction<1> f{{
       {455, 491},
       {553, 663},
       {673, 945},
       {728, 1043},
       {855, 1320},
-  }});
+  }};
   static_assert(roundBy(f.beta, 100) == Matrix<2, 1>{{{-474.88}, {2.09}}});
   static_assert(roundBy(f(0), 100) == -474.88, "");
 }

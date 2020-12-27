@@ -214,20 +214,20 @@ constexpr Matrix<Rows, Cols> roundBy(Matrix<Rows, Cols> const &m,
   return res;
 }
 
-struct Stream;
+struct Print;
 
-void printMatrix(Stream &out, int rows, int cols, double const *data);
+void printMatrix(Print &out, int rows, int cols, double const *data);
 
 template <int Rows, int Cols>
-Stream &operator<<(Stream &out, Matrix<Rows, Cols> const &m) {
+Print &operator<<(Print &out, Matrix<Rows, Cols> const &m) {
   printMatrix(out, Rows, Cols, &m[0][0]);
   return out;
 }
 
-void printLinearFunction(Stream &out, int vars, double const *data);
+void printLinearFunction(Print &out, int vars, double const *data);
 
 template <int Vars>
-Stream &operator<<(Stream &out, LinearFunction<Vars> const &f) {
+Print &operator<<(Print &out, LinearFunction<Vars> const &f) {
   printLinearFunction(out, Vars, &f.beta[0][0]);
   return out;
 }
