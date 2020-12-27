@@ -1,6 +1,5 @@
 #include "../include/CO2.h"
 
-#include "../include/linreg.h"
 #include "../include/matrix.h"
 #include "../include/print.h"
 
