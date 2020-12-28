@@ -14,7 +14,7 @@ constexpr bool PRODUCTION = false;
  * communication.
  */
 #ifndef UNIT_TEST
-constexpr bool DEBUG = true;  // Not unit test.
+constexpr bool DEBUG = false;  // Not unit test.
 #else
 constexpr bool DEBUG = false;
 #endif
@@ -58,7 +58,7 @@ class Logger : public Print {
 
  public:
   Logger(Print &log, __FlashStringHelper const *file, int line,
-         char const *func);
+         char const *func, Time timestamp);
   Logger() : log_(nullptr) {}
   Logger(Logger &&other) : log_(other.log_) { other.log_ = nullptr; }
   ~Logger() { write('\n'); }
@@ -72,7 +72,7 @@ template <>
 class Logger<false> : public Print {
  public:
   Logger(Print &log, __FlashStringHelper const *file, int line,
-         char const *func) {}
+         char const *func, Time timestamp) {}
   size_t write(uint8_t b) override { return 0; }
 };
 
@@ -80,7 +80,6 @@ static inline void doPrint(Print &out) {}
 
 template <typename Arg, typename... Args>
 void doPrint(Print &out, Arg const &arg, Args &&... args) {
-  if (!DEBUG) return;
   out << arg;
   doPrint(out, args...);
 }
@@ -88,18 +87,19 @@ void doPrint(Print &out, Arg const &arg, Args &&... args) {
 template <typename... Args>
 void doLog(__FlashStringHelper const *file, int line, char const *func,
            Args &&... args) {
-  Logger<DEBUG> logger(Serial, file, line, func);
+  Logger<DEBUG> logger(Serial, file, line, func, Time(millis()));
   doPrint(logger, args...);
 }
 
 template <typename... Args>
 void doLogf(__FlashStringHelper const *file, int line, char const *func,
             Args &&... args) {
-  Logger<DEBUG> logger(Serial, file, line, func);
+  Logger<DEBUG> logger(Serial, file, line, func, Time(millis()));
   logger.printf(args...);
 }
 
-#define LOGGER(NAME) Logger<DEBUG> NAME(Serial, F(__FILE__), __LINE__, __func__)
+#define LOGGER(NAME) \
+  Logger<DEBUG> NAME(Serial, F(__FILE__), __LINE__, __func__, Time(millis()))
 
 #define LOG(...)                                             \
   do {                                                       \

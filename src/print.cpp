@@ -9,10 +9,10 @@ size_t Time::printTo(Print &out) const {
 
 template <>
 Logger<true>::Logger(Print &log, __FlashStringHelper const *file, int line,
-                     char const *func)
+                     char const *func, Time timestamp)
     : log_(&log) {
   size_t sz = 0;
-  sz += log_->print(Time(millis()));
+  sz += log_->print(timestamp);
   sz += log_->print(' ');
   sz += log_->print(file);
   sz += log_->print(':');
@@ -20,7 +20,7 @@ Logger<true>::Logger(Print &log, __FlashStringHelper const *file, int line,
   sz += log_->print(F(" ("));
   sz += log_->print(func);
   sz += log_->print(')');
-  static size_t maxLogPadding = 40;
+  static size_t maxLogPadding = 0;
   if (sz >= maxLogPadding) {
     maxLogPadding = sz + 1;
   }
