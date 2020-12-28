@@ -14,7 +14,7 @@ constexpr bool PRODUCTION = false;
  * communication.
  */
 #ifndef UNIT_TEST
-constexpr bool DEBUG = false;  // Not unit test.
+constexpr bool DEBUG = true;  // Not unit test.
 #else
 constexpr bool DEBUG = false;
 #endif
