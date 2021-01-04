@@ -7,50 +7,6 @@
 		{
 			"name": "sensors_wifi",
 			"path": "sensors_wifi"
-		},
-		{
-			"name": "AnalogWrite",
-			"path": "lib\\AnalogWrite"
-		},
-		{
-			"name": "Blink",
-			"path": "lib\\Blink"
-		},
-		{
-			"name": "Button",
-			"path": "lib\\Button"
-		},
-		{
-			"name": "Callback",
-			"path": "lib\\Callback"
-		},
-		{
-			"name": "CO2",
-			"path": "lib\\CO2"
-		},
-		{
-			"name": "Homectl",
-			"path": "lib\\Homectl"
-		},
-		{
-			"name": "Matrix",
-			"path": "lib\\Matrix"
-		},
-		{
-			"name": "Power",
-			"path": "lib\\Power"
-		},
-		{
-			"name": "Print",
-			"path": "lib\\Print"
-		},
-		{
-			"name": "unittest",
-			"path": "lib\\unittest"
-		},
-		{
-			"name": "UsbEcho",
-			"path": "lib\\UsbEcho"
 		}
 	],
 	"settings": {}
