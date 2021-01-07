@@ -1,6 +1,6 @@
 #include "homectl/Blink.h"
 
-#include "homectl/AnalogWrite.h"
+#include <analogWrite.h>
 
 Blink::Blink(uint8_t pin) : pin_(pin) {
   // initialize the digital pin as an output.

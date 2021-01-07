@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include <DHT.h>
 #include <LiquidCrystal_I2C.h>
+#include <analogWrite.h>
 
-#include "homectl/AnalogWrite.h"
 #include "homectl/Blink.h"
 #include "homectl/Button.h"
 #include "homectl/CO2.h"
