@@ -25,6 +25,12 @@ class UnitTest {
   static void run();
 };
 
+#ifdef UNIT_TEST
+#define TEST_INSTANCE(CLASS, NAME) test##CLASS##_##NAME
+#else
+#define TEST_INSTANCE(CLASS, NAME)
+#endif
+
 #define TEST(CLASS, NAME)                 \
   class CLASS##_##NAME : UnitTest {       \
    public:                                \
@@ -40,7 +46,7 @@ class UnitTest {
     }                                     \
                                           \
     void run(Result &ctx) const override; \
-  } test##CLASS##_##NAME;                 \
+  } TEST_INSTANCE(CLASS, NAME);           \
   void CLASS##_##NAME::run(Result &ctx) const
 
 static inline void testPrint(Print &out) {}

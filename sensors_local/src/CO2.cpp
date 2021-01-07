@@ -2,6 +2,7 @@
 
 #include "homectl/Matrix.h"
 #include "homectl/Print.h"
+#include "homectl/UART.h"
 
 // Calibration values {Temp (Sensor), CO2 (Sensor), CO2 (Temtop)}:
 constexpr LinearFunction<2> correction{{
@@ -78,46 +79,6 @@ static constexpr byte getCheckSum(byte const (&packet)[9]) {
 static_assert(getCheckSum({0, 1, 2, 3, 4, 5, 6, 7, 8}) == 0xE4,
               "getCheckSum is implemented wrong");
 
-static bool hasGarbage(Stream &io) {
-  return io.available() > 0 && (byte)io.peek() != 0xFF;
-}
-
-static int readResponse(Stream &io, byte (&response)[9]) {
-  int waited = 0;
-  while (io.available() == 0) {
-    delay(100);  // wait a short moment to avoid false reading
-    if (waited++ > 10) {
-      LOG(F("no response after 1 second"));
-      io.flush();
-      return STATUS_NO_RESPONSE;
-    }
-  }
-
-  // The response starts with 0xff. If we get anything else, it's garbage.
-  if (hasGarbage(io)) {
-    LOGGER(logger);
-    logger << F("skipping unexpected readings:");
-    while (hasGarbage(io)) {
-      logger.printf(" %02X", io.read());
-    }
-  }
-
-  if (io.available() > 0) {
-    int const count = io.readBytes(response, 9);
-    if (count < 9) {
-      io.flush();
-      return STATUS_INCOMPLETE;
-    }
-  } else {
-    io.flush();
-    return STATUS_INCOMPLETE;
-  }
-
-  LOG(F("  <<"), Bytes(response));
-
-  return 0;
-}
-
 static int sendCommand(Stream &io, byte (&cmd)[9], byte (*response)[9]) {
   LOG(F("  >>"), Bytes(cmd));
   cmd[8] = getCheckSum(cmd);
@@ -128,7 +89,7 @@ static int sendCommand(Stream &io, byte (&cmd)[9], byte (*response)[9]) {
     response = &buf;
   }
 
-  int ret = readResponse(io, *response);
+  int const ret = readResponse(io, *response, 0xFF);
   if (ret != 0) {
     LOG(F("error reading response: "), ret);
   }
@@ -197,20 +158,14 @@ Print &operator<<(Print &out, CO2::Reading const &reading) {
   return out;
 }
 
-size_t CO2::Reading::printTo(Print &out, void (*setCursor)(Print &out, int col,
-                                                           int row)) const {
+size_t CO2::Reading::printTo(Print &out) const {
   size_t sz = 0;
-  setCursor(out, 0, 0);
-  sz += out.print(F("Temp: "));
-  sz += out.print(temperature);
-  setCursor(out, 0, 1);
   sz += out.print(F("CO2: "));
   sz += out.print(ppm_raw);
-  setCursor(out, 0, 2);
-  sz += out.print(F("Corrected: "));
+  sz += out.print(F(" ("));
   sz += out.print(ppm_corrected);
-  setCursor(out, 0, 3);
-  sz += out.print(F("Unknown: "));
-  sz += out.print(unknown);
+  sz += out.print(F(") @"));
+  sz += out.print(temperature);
+  sz += out.print('C');
   return sz;
 }

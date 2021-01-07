@@ -1,7 +1,6 @@
 #include "homectl/Homectl.h"
-#include "homectl/unittest.h"
 
-static Homectl homectl;
+static byte homectl[sizeof(Homectl)];
 
-void loop() { homectl.loop(); }
-void setup() { homectl.setup(); }
+void setup() { (new (homectl) Homectl)->setup(); }
+void loop() { reinterpret_cast<Homectl *>(homectl)->loop(); }

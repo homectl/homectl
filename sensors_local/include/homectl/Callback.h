@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 template <typename Registry>
 struct EventRegistered {
   typename Registry::callback_type &callback;
@@ -64,3 +66,15 @@ class Callback<R(Args...)> {
     return {*this, object};
   }
 };
+
+#define EV_OBJECT(CLASS)                                \
+ public:                                                \
+  template <typename Registry, typename... Rest>        \
+  CLASS(EventRegistered<Registry> evt, Rest &&... rest) \
+      : CLASS(std::forward<Rest>(rest)...) {            \
+    evt.listen();                                       \
+  };                                                    \
+                                                        \
+  void loop();                                          \
+                                                        \
+ private:

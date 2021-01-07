@@ -28,12 +28,14 @@ class Time : public Printable {
 };
 
 class Bytes : public Printable {
-  byte *data_;
+  byte const *data_;
   size_t size_;
 
  public:
   template <int N>
-  explicit Bytes(byte (&data)[N]) : data_(data), size_(N) {}
+  explicit Bytes(byte const (&data)[N]) : Bytes(data, N) {}
+
+  Bytes(byte const *data, size_t size) : data_(data), size_(size) {}
 
   size_t printTo(Print &out) const override {
     size_t ret = 0;
