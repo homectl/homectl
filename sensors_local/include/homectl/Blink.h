@@ -10,7 +10,7 @@
  * the intensity of the LED.
  */
 class Blink {
-  mutable bool enabled_ = true;
+  bool enabled_ = true;
   uint8_t const pin_;
   uint8_t increment_ = 1;
   uint8_t value_ = 255;
