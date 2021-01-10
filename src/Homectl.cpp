@@ -13,7 +13,7 @@ static void pad(Print &out, size_t sz) {
 
 void Homectl::State::showPMSReading(PMS5003T::Reading const &reading) {
   // We got a reading, so put the sensor back to sleep.
-  pms5003t.sleep(true);
+  // pms5003t.sleep(true);
 
   lcd.setCursor(0, 3);
   pad(lcd, reading.printTo(lcd));
@@ -82,7 +82,7 @@ void Homectl::setup() {
   state.lcd.print("Welcome to Homectl");
 
   // Initially, wake the PM sensor.
-  state.pms5003t.sleep(false);
+  // state.pms5003t.sleep(false);
 
   LOG("setup complete");
 }
