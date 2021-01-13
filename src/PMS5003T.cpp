@@ -16,7 +16,7 @@ static uint16_t getPms5003Checksum(byte const (&payload)[N]) {
 }
 
 PMS5003T::PMS5003T(HardwareSerial &io) : io_(io) {
-  io_.begin(9600, SERIAL_8N1, 32, 33);
+  io_.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
 }
 
 template <int SendSize, int RecvSize>

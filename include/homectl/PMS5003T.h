@@ -8,6 +8,9 @@ class PMS5003T {
   EV_OBJECT(PMS5003T)
 
  public:
+  static constexpr uint8_t RX_PIN = 32;
+  static constexpr uint8_t TX_PIN = 33;
+
   struct Reading {
     uint16_t pm1_0_std = -1;
     uint16_t pm2_5_std = -1;
