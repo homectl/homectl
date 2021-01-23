@@ -5,6 +5,7 @@
 
 constexpr byte INIT_BYTE1 = 0x42;
 constexpr byte INIT_BYTE2 = 0x4d;
+constexpr byte RESPONSE_LEN = 28;
 
 template <int N>
 static uint16_t getPms5003Checksum(byte const (&payload)[N]) {
@@ -44,37 +45,43 @@ void PMS5003T::sleep(bool enabled) {
   sendCommand(io_, cmd, response, INIT_BYTE1);
 }
 
+static void skipGarbage(Stream &io) {
+  while (io.available() != 0) {
+    Serial.printf("%02x ", io.read());
+  }
+  Serial.println();
+}
+
 void PMS5003T::loop() {
   if (io_.available() == 0) return;
 
   byte const b1 = io_.read();
   if (b1 != INIT_BYTE1) {
     LOGF(F("Incorrect start byte 1 of PMS5003T reading: %02X"), b1);
-    return;
+    return skipGarbage(io_);
   }
   byte const b2 = io_.read();
   if (b2 != INIT_BYTE2) {
     LOGF(F("Incorrect start byte 2 of PMS5003T reading: %02X"), b2);
-    return;
+    return skipGarbage(io_);
   }
 
   byte lenHi = io_.read();
   byte lenLo = io_.read();
   uint16_t len = (uint16_t(lenHi) << 8) | lenLo;
-  if (len != 28) {
+  if (len != RESPONSE_LEN) {
     LOG("Got unexpected payload length: ", len);
-    while (io_.available() != 0) Serial.printf("%02x ", io_.read());
-    return;
+    return skipGarbage(io_);
   }
 
-  byte payload[28];
+  byte payload[RESPONSE_LEN];
   for (uint16_t i = 0; i < len; ++i) {
     payload[i] = io_.read();
   }
 
   Reading const reading(payload);
   uint16_t const checksumRef =
-      getPms5003Checksum(payload) + INIT_BYTE1 + INIT_BYTE2 + sizeof payload;
+      getPms5003Checksum(payload) + INIT_BYTE1 + INIT_BYTE2 + RESPONSE_LEN;
   if (reading.checksum != checksumRef) {
     LOGF(F("ERROR: Checksum from PMS5003T didn't match: %d vs. %d (computed)"),
          reading.checksum, checksumRef);
@@ -88,11 +95,6 @@ void PMS5003T::loop() {
       ", PM1.0: ", reading.pm1_0_cnt, ", PM2.5: ", reading.pm2_5_cnt,
       "\n  Temp: ", float(reading.temp) / 10,
       "C, Hum: ", float(reading.hum) / 10, '%');
-
-  while (io_.available() != 0) {
-    LOG("Discarding garbage");
-    while (io_.available() != 0) Serial.printf("%02x ", io_.read());
-  }
 
   return newReading(reading);
 }

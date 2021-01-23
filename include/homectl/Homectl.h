@@ -23,7 +23,10 @@ class Homectl {
   };
 
   struct State {
-    CO2 co2{Serial2};
+    CO2 co2{
+        co2.newReading.listen<State, &State::showCO2Reading>(*this),
+        Serial2,
+    };
     Blink blink{Pins::LED};
     PushButton button{
         button.pushed.listen<Blink, &Blink::setEnabled>(blink),
@@ -41,6 +44,7 @@ class Homectl {
     unsigned long iterations = 0;
 
     void showPMSReading(PMS5003T::Reading const &reading);
+    void showCO2Reading(CO2::Reading const &reading);
   };
 
   State state;

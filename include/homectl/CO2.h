@@ -2,12 +2,13 @@
 
 #include <Arduino.h>
 
+#include "homectl/Callback.h"
+
 /**
  * MH-Z19b sensor interface using a user-supplied UART stream.
  */
 class CO2 {
-  Stream &input_;
-  unsigned long lastRequest_ = 0;
+  EV_OBJECT(CO2)
 
  public:
   /**
@@ -54,12 +55,12 @@ class CO2 {
   /**
    * Enable or disable Automatic Baseline Calibration.
    *
-   * This requires that at least once every 24 hours the sensor is exposed to a
-   * minimum CO2 environment of 450ppm. Indoors this is unlikely to happen
-   * unless you heavily ventilate every room every day. With ABC enabled, your
-   * sensor will drift upwards and no longer be able to measure lower values of
-   * CO2. We highly recommend doing a manual zero point calibration before
-   * starting the sensor, and then perhaps once a year.
+   * Having this enabled requires that at least once every 24 hours the sensor
+   * is exposed to a minimum CO2 environment of 450ppm. Indoors this is unlikely
+   * to happen unless you heavily ventilate every room every day. With ABC
+   * enabled, your sensor will drift upwards and no longer be able to measure
+   * lower values of CO2. We highly recommend doing a manual zero point
+   * calibration before starting the sensor, and then perhaps once a year.
    */
   void setABC(bool enabled) const;
   /**
@@ -87,7 +88,14 @@ class CO2 {
    * once every 5 seconds, so fetching readings more often than that gives you
    * no new information.
    */
-  Reading read();
+  void requestReading();
+
+  Callback<void(Reading const &)> newReading;
+
+ private:
+  void handleReading(byte (&response)[9]) const;
+
+  Stream &input_;
 };
 
 Print &operator<<(Print &out, CO2::Reading const &reading);

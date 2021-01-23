@@ -2,6 +2,8 @@
 
 #include <Arduino.h>
 
+#include "homectl/Queue.h"
+
 /**
  * In production mode, disable USB debugging and enable any power saving we can
  * do. In non-production mode, more debug information is available.
@@ -61,66 +63,95 @@ static inline Print &operator<<(Print &out, __FlashStringHelper const *arg) {
 template <bool Enabled>
 class Logger : public Print {
  private:
-  Print *log_;
+  static constexpr int BUFFER_LEN = 16;
+  static constexpr int LINE_LEN = 128;
+
+  struct LogLine {
+    uint8_t data[LINE_LEN];
+    uint8_t *cur;
+
+    LogLine() : cur(data) {}
+    LogLine(LogLine &&rhs) { *this = std::move(rhs); }
+    LogLine &operator=(LogLine &&rhs) {
+      memcpy(data, rhs.data, rhs.cur - rhs.data);
+      cur = data + (rhs.cur - rhs.data);
+      rhs.cur = rhs.data;
+      return *this;
+    }
+  };
+
+  LogLine line_;
+
+  static Print *&output();
+  static ThreadSafeQueue<LogLine, BUFFER_LEN> &queue();
+  static TaskHandle_t &task();
+
+  static void writeLines(void *);
 
  public:
-  Logger(Print &log, __FlashStringHelper const *file, int line,
-         char const *func, Time timestamp);
-  Logger() : log_(nullptr) {}
-  Logger(Logger &&other) : log_(other.log_) { other.log_ = nullptr; }
-  ~Logger() { write('\n'); }
-  size_t write(uint8_t b) override { return log_ ? log_->write(b) : 0; }
-  size_t write(const uint8_t *buffer, size_t size) override {
-    return log_ ? log_->write(buffer, size) : 0;
-  };
+  Logger(__FlashStringHelper const *file, int line, char const *func,
+         Time timestamp);
+  Logger() {}
+  Logger(Logger &&other) : line_(std::move(other.line_)) {}
+  ~Logger() {
+    if (line_.cur != nullptr) {
+      queue().add(std::move(line_));
+    }
+  }
+  size_t write(uint8_t b) override {
+    if (line_.cur == nullptr || line_.cur == line_.data + LINE_LEN) return 0;
+    *line_.cur = b;
+    ++line_.cur;
+    return 1;
+  }
+
+  static void setOutput(Print &out);
+  static void setup();
 };
 
 template <>
 class Logger<false> : public Print {
  public:
-  Logger(Print &log, __FlashStringHelper const *file, int line,
-         char const *func, Time timestamp) {}
+  Logger() {}
+  Logger(__FlashStringHelper const *file, int line, char const *func,
+         Time timestamp) {}
   size_t write(uint8_t b) override { return 0; }
+
+  static void setup() {}
 };
 
 static inline void doPrint(Print &out) {}
 
 template <typename Arg, typename... Args>
-void doPrint(Print &out, Arg const &arg, Args &&... args) {
+void doPrint(Print &out, Arg const &arg, Args &&...args) {
   out << arg;
   doPrint(out, args...);
 }
 
 template <typename... Args>
-void doLog(__FlashStringHelper const *file, int line, char const *func,
-           Args &&... args) {
-  Logger<DEBUG> logger(Serial, file, line, func, Time(millis()));
+Logger<DEBUG> doLog(__FlashStringHelper const *file, int line, char const *func,
+                    Args &&...args) {
+  Logger<DEBUG> logger(file, line, func, Time(millis()));
   doPrint(logger, args...);
+  return logger;
 }
 
 template <typename... Args>
-void doLogf(__FlashStringHelper const *file, int line, char const *func,
-            __FlashStringHelper const *fmt, Args &&... args) {
-  Logger<DEBUG> logger(Serial, file, line, func, Time(millis()));
+Logger<DEBUG> doLogf(__FlashStringHelper const *file, int line,
+                     char const *func, __FlashStringHelper const *fmt,
+                     Args &&...args) {
+  Logger<DEBUG> logger(file, line, func, Time(millis()));
 #ifdef TEENSY
   logger.printf(fmt, args...);
 #else
   logger.printf(String(fmt).begin(), args...);
 #endif
+  return logger;
 }
 
-#define LOGGER(NAME) \
-  Logger<DEBUG> NAME(Serial, F(__FILE__), __LINE__, __func__, Time(millis()))
+static inline Logger<DEBUG> noLog() { return {}; }
 
-#define LOG(...)                                             \
-  do {                                                       \
-    if (DEBUG) {                                             \
-      doLog(F(__FILE__), __LINE__, __func__, ##__VA_ARGS__); \
-    }                                                        \
-  } while (0)
-#define LOGF(...)                                           \
-  do {                                                      \
-    if (DEBUG) {                                            \
-      doLogf(F(__FILE__), __LINE__, __func__, __VA_ARGS__); \
-    }                                                       \
-  } while (0)
+#define LOG(...) \
+  (DEBUG ? doLog(F(__FILE__), __LINE__, __func__, ##__VA_ARGS__) : noLog())
+#define LOGF(...) \
+  (DEBUG ? doLogf(F(__FILE__), __LINE__, __func__, __VA_ARGS__) : noLog())

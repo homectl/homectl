@@ -4,6 +4,10 @@
 #include "homectl/Print.h"
 #include "homectl/UART.h"
 
+// The sensor delivers temperature readings in Celcius, but they are offset by
+// some amount. We subtract this amount when displaying the actual temperature.
+constexpr byte TEMPERATURE_OFFSET = 49;
+
 // Calibration values {Temp (Sensor), CO2 (Sensor), CO2 (Temtop)}:
 constexpr LinearFunction<2> correction{{
     // Probably stable (measured after leaving the room with a closed
@@ -27,7 +31,8 @@ constexpr LinearFunction<2> correction{{
 
     {21, 560, 739},
 
-    // Might not be stable (measured while in the room, door/windows closed).
+    // Might not be stable (measured while in the room, door/windows
+    // closed).
     {13, 540, 571},
 
     {14, 580, 676},
@@ -79,63 +84,38 @@ static constexpr byte getCheckSum(byte const (&packet)[9]) {
 static_assert(getCheckSum({0, 1, 2, 3, 4, 5, 6, 7, 8}) == 0xE4,
               "getCheckSum is implemented wrong");
 
-static int sendCommand(Stream &io, byte (&cmd)[9], byte (*response)[9]) {
+static void sendCommand(Stream &io, byte (&cmd)[9]) {
   LOG(F("  >>"), Bytes(cmd));
   cmd[8] = getCheckSum(cmd);
   io.write(cmd, 9);
-
-  byte buf[9];  // in case no buffer supplied
-  if (response == nullptr) {
-    response = &buf;
-  }
-
-  int const ret = readResponse(io, *response, 0xFF);
-  if (ret != 0) {
-    LOG(F("error reading response: "), ret);
-  }
-
-  return ret;
 }
 
 void CO2::setABC(bool enabled) const {
   byte cmd[9] = {0xFF, 0x01, 0x79, byte(enabled * 0xA0), 0x00, 0x00,
                  0x00, 0x00, 0x00};
-  sendCommand(input_, cmd, nullptr);
+  sendCommand(input_, cmd);
 }
 
 void CO2::calibrateZeroPoint() const {
   byte cmd[9] = {0xFF, 0x01, 0x87, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  sendCommand(input_, cmd, nullptr);
+  sendCommand(input_, cmd);
 }
 
 void CO2::calibrateSpanPoint(uint16_t ppm) const {
   byte cmd[9] = {0xFF, 0x01, 0x88, 0x00, byte(ppm / 256), byte(ppm % 256),
                  0x00, 0x00, 0x00};
-  sendCommand(input_, cmd, nullptr);
+  sendCommand(input_, cmd);
 }
 
-CO2::Reading CO2::read() {
+void CO2::requestReading() {
   byte cmd[9] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
-  byte response[9];  // for answer
+  sendCommand(input_, cmd);
+}
 
-  int ret = sendCommand(input_, cmd, &response);  // request PPM CO2
-  if (ret != 0) {
-    return {ret};
-  }
-  lastRequest_ = millis();
-
-  byte const check = getCheckSum(response);
-  if (response[8] != check) {
-    LOG(F("checksum failed"));
-    LOGF(F("received: %02X"), response[8]);
-    LOGF(F("should be: %02X"), check);
-    input_.flush();
-    return {STATUS_CHECKSUM_MISMATCH};
-  }
-
+void CO2::handleReading(byte (&response)[9]) const {
   LOG(F("applying linear correction: "), correction);
   int const ppm_raw = 256 * (int)response[2] + response[3];
-  int const temperature = response[4] - 34;
+  int const temperature = response[4] - TEMPERATURE_OFFSET;
   int const ppm_corrected = correction(temperature, ppm_raw);
   int const unknown = 256 * (int)response[6] + response[7];
 
@@ -148,7 +128,46 @@ CO2::Reading CO2::read() {
 
   input_.flush();
 
-  return {ppm_raw, ppm_corrected, temperature, unknown};
+  return newReading(Reading{ppm_raw, ppm_corrected, temperature, unknown});
+}
+
+void CO2::loop() {
+  if (input_.available() == 0) return;
+
+  byte response[9];
+
+  int const ret = readResponse(input_, response, 0xFF);
+  if (ret != 0) {
+    LOG(F("error reading response: "), ret);
+    return;
+  }
+
+  byte const check = getCheckSum(response);
+  if (response[8] != check) {
+    LOG(F("checksum failed"));
+    LOGF(F("received: %02X"), response[8]);
+    LOGF(F("should be: %02X"), check);
+    input_.flush();
+    // STATUS_CHECKSUM_MISMATCH
+    return;
+  }
+
+  switch (response[1]) {
+    case 0x79:
+      // setABC
+      break;
+    case 0x86:
+      return handleReading(response);
+    case 0x87:
+      // calibrateZeroPoint
+      break;
+    case 0x88:
+      // calibrateSpanPoint
+      break;
+    default:
+      LOGF(F("got response to unknown command: %02X"), response[1]);
+      break;
+  }
 }
 
 Print &operator<<(Print &out, CO2::Reading const &reading) {

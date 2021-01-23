@@ -13,9 +13,15 @@ static void pad(Print &out, size_t sz) {
 
 void Homectl::State::showPMSReading(PMS5003T::Reading const &reading) {
   // We got a reading, so put the sensor back to sleep.
-  // pms5003t.sleep(true);
+  pms5003t.sleep(true);
 
   lcd.setCursor(0, 3);
+  pad(lcd, reading.printTo(lcd));
+}
+
+void Homectl::State::showCO2Reading(CO2::Reading const &reading) {
+  LOG(reading);
+  lcd.setCursor(0, 0);
   pad(lcd, reading.printTo(lcd));
 }
 
@@ -28,10 +34,7 @@ void Homectl::handleLoopTimer() {
     state.lastTime = currTime / 1000 * 1000;
     state.iterations = 0;
 
-    CO2::Reading co2Reading = state.co2.read();
-    LOG(co2Reading);
-    state.lcd.setCursor(0, 0);
-    pad(state.lcd, co2Reading.printTo(state.lcd));
+    state.co2.requestReading();
 
     float temperature = state.dht.readTemperature(false);
     state.lcd.setCursor(0, 1);
@@ -50,6 +53,7 @@ void Homectl::loop() {
   state.button.loop();
   state.usbEcho.loop();
   state.pms5003t.loop();
+  state.co2.loop();
 
   handleLoopTimer();
 
@@ -58,6 +62,8 @@ void Homectl::loop() {
 
 // the setup routine runs once when you press reset:
 void Homectl::setup() {
+  Logger<DEBUG>::setup();
+
   state.dht.begin();
 
   if (DEBUG) {
@@ -75,14 +81,14 @@ void Homectl::setup() {
   // state.co2.setABC(false);
   // state.co2.calibrateSpanPoint(1000);
 
-  // Switch on the backlight
+  // Switch on the LCD backlight, clear screen, and print welcome message.
   state.lcd.init();
   state.lcd.backlight();
   state.lcd.home();
   state.lcd.print("Welcome to Homectl");
 
   // Initially, wake the PM sensor.
-  // state.pms5003t.sleep(false);
+  state.pms5003t.sleep(false);
 
   LOG("setup complete");
 }

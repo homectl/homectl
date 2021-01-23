@@ -19,8 +19,7 @@ int readResponse(Stream &io, byte *response, size_t recvSize, byte startByte) {
 
   // The response starts with 0xff. If we get anything else, it's garbage.
   if (hasGarbage(io, startByte)) {
-    LOGGER(logger);
-    logger << F("skipping unexpected readings:");
+    auto logger = LOG(F("skipping unexpected readings:"));
     while (hasGarbage(io, startByte)) {
       logger.printf(" %02X", io.read());
     }
