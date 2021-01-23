@@ -3,9 +3,5 @@
 
 static byte homectl[sizeof(Homectl)];
 
-void setup() {
-  (new (homectl) Homectl)->setup();
-  UnitTest::run();
-}
-
+void setup() { (new (homectl) Homectl)->setup(); }
 void loop() { reinterpret_cast<Homectl *>(homectl)->loop(); }

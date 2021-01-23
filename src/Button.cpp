@@ -1,6 +1,6 @@
 #include "homectl/Button.h"
 
-#include "homectl/Print.h"
+#include "homectl/Logger.h"
 
 PushButton::PushButton(uint8_t pin)
     : pin_(pin), switched_(true), prevState_(HIGH) {

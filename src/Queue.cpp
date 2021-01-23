@@ -40,3 +40,15 @@ static constexpr bool testQueueSize() {
 }
 
 static_assert(testQueueSize(), "testQueueSize failed");
+
+static constexpr bool testQueueMove() {
+  Queue<int, 5> queue{1, 2, 3, 4, 5};
+
+  Queue<int, 5> queue2 = std::move(queue);
+  if (queue.size() != 0) return false;
+  if (queue2.size() != 5) return false;
+
+  return true;
+}
+
+static_assert(testQueueMove(), "testQueueMove failed");

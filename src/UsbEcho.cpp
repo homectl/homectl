@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-#include "homectl/Print.h"
+#include "homectl/Logger.h"
 
 static bool isLineBreak(char c) { return c == '\r' || c == '\n'; }
 

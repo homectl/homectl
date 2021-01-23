@@ -54,11 +54,20 @@ class PMS5003T {
 
   explicit PMS5003T(HardwareSerial &io);
   void sleep(bool enabled);
-  Reading const &read() const;
 
   Callback<void(Reading const &)> newReading;
 
  private:
+  void sendSleep(bool enabled);
+
+  void processOutput();
+  void processInput();
+
   HardwareSerial io_;
-  Reading reading_;
+  TimerHandle_t timer_;
+  enum SleepCommand {
+    SLEEP_NONE,
+    SLEEP_ENABLE,
+    SLEEP_DISABLE,
+  } sleepCommand_ = SLEEP_NONE;
 };

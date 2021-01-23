@@ -12,6 +12,12 @@ class Queue {
       add(std::move(v));  // ignores failures
     }
   }
+  constexpr Queue(Queue &&rhs) : data_{}, end_(data_) {
+    for (T &v : rhs.data_) {
+      add(std::move(v));
+    }
+    rhs.clear();
+  }
 
   constexpr bool add(T &&value) {
     if (end_ == data_ + Capacity) {
@@ -49,13 +55,9 @@ class ThreadSafeQueue {
     return queue_.size();
   }
 
-  template <typename F>
-  void consume(F f) {
+  Queue<T, Capacity> consume() {
     Lock const guard(mtx_);
-    for (T const &v : queue_) {
-      f(v);
-    }
-    queue_.clear();
+    return std::move(queue_);
   }
 
  private:

@@ -87,8 +87,5 @@ void Homectl::setup() {
   state.lcd.home();
   state.lcd.print("Welcome to Homectl");
 
-  // Initially, wake the PM sensor.
-  state.pms5003t.sleep(false);
-
   LOG("setup complete");
 }

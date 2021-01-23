@@ -1,6 +1,6 @@
 #include "homectl/UART.h"
 
-#include "homectl/Print.h"
+#include "homectl/Logger.h"
 
 static bool hasGarbage(Stream &io, byte startByte) {
   return io.available() > 0 && (byte)io.peek() != startByte;

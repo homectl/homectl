@@ -32,12 +32,3 @@ TEST(Print, Bytes) {
   out << Bytes(data);
   EXPECT_EQ(out.str(), " 3E AA 00");
 }
-
-TEST(Print, Logger) {
-  Logger<true> logger(F("file.cpp"), 123, "myfunc", Time(1234));
-  doPrint(logger, "hello ", 123, ' ', 2.34);
-  StringPrint out;
-  Logger<true>::setOutput(out);
-  EXPECT_EQ(out.str(), "[0:01.234] file.cpp:123 (myfunc) hello 123 2.34");
-  Logger<true>::setOutput(Serial);
-}

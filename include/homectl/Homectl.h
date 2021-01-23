@@ -8,9 +8,9 @@
 #include "homectl/Blink.h"
 #include "homectl/Button.h"
 #include "homectl/CO2.h"
+#include "homectl/Logger.h"
 #include "homectl/Matrix.h"
 #include "homectl/PMS5003T.h"
-#include "homectl/Print.h"
 #include "homectl/UsbEcho.h"
 
 class Homectl {

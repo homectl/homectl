@@ -1,7 +1,7 @@
 #include "homectl/CO2.h"
 
+#include "homectl/Logger.h"
 #include "homectl/Matrix.h"
-#include "homectl/Print.h"
 #include "homectl/UART.h"
 
 // The sensor delivers temperature readings in Celcius, but they are offset by
